@@ -17,3 +17,5 @@ libraryDependencies ++= Seq(
   "io.circe" %% "circe-generic",
   "io.circe" %% "circe-parser"
 ).map(_ % circeVersion)
+
+libraryDependencies += "com.github.nscala-time" %% "nscala-time" % "2.16.0"

@@ -1,12 +1,13 @@
-import Main.setup
-import com.pi4j.io.gpio.{GpioFactory, GpioPinDigitalOutput, PinState, RaspiPin}
-//import com.pi4j.io.gpio.{GpioFactory, GpioPinDigitalOutput, Pin, PinState, RaspiPin => Pins}
+package de.ax.uwt
+
+import com.github.nscala_time.time.Imports.DateTime
 
 /**
   * Created by nyxos on 14.06.17.
   */
 
 trait UWT {
+  implicit def i2p(i: Int): Pin
 
   trait Pin {
 
@@ -80,9 +81,30 @@ trait UWT {
 
   def setup: Net
 
-  def calcLitersFromFlowPlan(flowPlan: FlowPlan) = {
-    (flowPlan.maxFlow + flowPlan.minFlow) * 0.5
+  def getWeatherData: WeatherDataSet
+
+  def wateringWaitTimeHours = 4
+
+  def valueFactor = wateringWaitTimeHours / 24.0
+
+
+  def calcLitersFromFlowPlan(flowPlan: FlowPlan): Double = {
+    val datas = getWeatherData.hourly.data.filter { dt =>
+      val radius = wateringWaitTimeHours / 2
+      dt.dateTime.isAfter(DateTime.now.minusHours(radius)) || dt.dateTime.isBefore(DateTime.now.plusHours(radius))
+    }
+    val rainLiters = datas.map(dt => dt.precipIntensity * dt.precipProbability).sum
+    val temp = datas.map(dt => dt.temperature.orElse(dt.temperatureMax).get).max
+    val minTemp = 15
+    val maxTemp = 30
+    val tFactor: Double = (temp - minTemp) / (maxTemp - minTemp)
+    val v = ((flowPlan.maxFlow * valueFactor) - rainLiters) * (tFactor.abs)
+    val normalized = math.min(math.max(flowPlan.minFlow * valueFactor, v), flowPlan.maxFlow * valueFactor)
+    println(s"to water $v=$normalized ((${flowPlan.maxFlow}-$rainLiters)*${tFactor.abs})")
+    normalized
   }
+
+  def doWait(waitMs: Long): Unit
 
   def doWater: Unit = {
     val net = setup
@@ -92,10 +114,9 @@ trait UWT {
       val waitMs = calcFlowTimeFromLiters(liters)
       println(s"watering $liters l in $waitMs ms for flow $f")
       try {
-        pump.on
         valve.on
-
-        Thread.sleep(waitMs)
+        pump.on
+        doWait(waitMs)
       } finally {
         pump.off
         valve.off
@@ -111,51 +132,4 @@ trait UWT {
     val relaises = net.elms.filter(_.isOn)
     assert(relaises.isEmpty, s"there were enabled elements: $relaises")
   }
-}
-
-object Main extends App with UWT {
-
-  /*
-  RaspiExample
-   val Pins = RaspiPin
-
-   implicit def r2p(p: com.pi4j.io.gpio.Pin) = new Pin {
-     val digitalOutput: GpioPinDigitalOutput = GpioFactory.getInstance.provisionDigitalOutputPin(p, name, PinState.HIGH)
-     off
-
-     override def off: Unit = digitalOutput.low()
-
-     override def on: Unit = digitalOutput.high()
-   }
-    */
-  case class IntPin(i: Int) extends Pin {
-    override def off: Unit = println(s"pin $i off")
-
-    override def on: Unit = println(s"pin $i on")
-  }
-
-  implicit def i2p(i: Int): Pin = {
-    IntPin(i)
-  }
-
-  def setup: Net = {
-    val net = this.Net()
-
-    import net.{valve, pump, flow}
-
-    val pump1 = pump("pump", 2)
-    val valve1 = valve("valve1", 3)
-    val valve2 = valve("valve2", 4)
-    val valve3 = valve("valve3", 14)
-    val fp_hort = FlowPlan("hortensien", 1, 10)
-    val fp_rose = FlowPlan("rosen", 0.5, 1)
-    flow("Hortensie1", pump1, valve1, fp_hort)
-    flow("Rose1", pump1, valve2, fp_rose)
-    flow("Hortensie2", pump1, valve3, fp_hort)
-    net
-  }
-
-
-  doWater
-
 }

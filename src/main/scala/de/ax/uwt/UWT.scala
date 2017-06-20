@@ -2,6 +2,8 @@ package de.ax.uwt
 
 import com.github.nscala_time.time.Imports.DateTime
 
+import scala.annotation.tailrec
+
 /**
   * Created by nyxos on 14.06.17.
   */
@@ -132,4 +134,20 @@ trait UWT {
     val relaises = net.elms.filter(_.isOn)
     assert(relaises.isEmpty, s"there were enabled elements: $relaises")
   }
+
+  def shouldStop: Boolean
+
+  @tailrec final def doSchedule(loopHours: Int, start: DateTime = DateTime.now()): Unit = {
+    if (!shouldStop) {
+      if (DateTime.now.isAfter(start)) {
+        doWater
+        doSchedule(loopHours, start.plusHours(loopHours))
+      } else {
+        doWait(60 * 1000)
+        doSchedule(loopHours, start)
+      }
+    }
+  }
 }
+
+

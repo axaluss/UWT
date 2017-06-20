@@ -33,4 +33,6 @@ object PiRun extends App with UWT {
   override def getWeatherData: WeatherDataSet = ???
 
   override def doWait(waitMs: Long): Unit = ???
+
+  override def shouldStop: Boolean = ???
 }

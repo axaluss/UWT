@@ -26,7 +26,7 @@ object DryRun extends App with UWT {
   }
 
 
-  doWater
+
 
   override def getWeatherData: WeatherDataSet = {
     val res = decode[WeatherDataSet](Source.fromFile("testdata/meisenbach.json").mkString)
@@ -39,4 +39,8 @@ object DryRun extends App with UWT {
     println(s"waiting for $waitMs ms")
     Thread.sleep(100 * l)
   }
+
+  doSchedule(1)
+
+  override def shouldStop: Boolean = false
 }

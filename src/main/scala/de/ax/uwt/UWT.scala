@@ -85,7 +85,7 @@ trait UWT {
 
   def getWeatherData: WeatherDataSet
 
-  def wateringWaitTimeHours = 4
+  var wateringWaitTimeHours = 4
 
   def valueFactor = wateringWaitTimeHours / 24.0
 
@@ -126,8 +126,10 @@ trait UWT {
     }
   }
 
+  def pumpLitersPerMinute = 14.0
+
   private def calcFlowTimeFromLiters(liters: Double) = {
-    ((liters / 15.0) * 60 * 1000).toInt
+    ((liters / pumpLitersPerMinute) * 60 * 1000).toInt
   }
 
   private def checkAllOff(net: Net) = {
@@ -138,6 +140,7 @@ trait UWT {
   def shouldStop: Boolean
 
   @tailrec final def doSchedule(loopHours: Int, start: DateTime = DateTime.now()): Unit = {
+    wateringWaitTimeHours = loopHours
     if (!shouldStop) {
       if (DateTime.now.isAfter(start)) {
         doWater

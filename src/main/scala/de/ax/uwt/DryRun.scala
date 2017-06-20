@@ -36,8 +36,9 @@ object DryRun extends App with UWT {
 
   override def doWait(waitMs: Long): Unit = {
     val l = (waitMs / 1000) + 1
-    println(s"waiting for $waitMs ms")
-    Thread.sleep(100 * l)
+    val actual = 100 * l
+    println(s"sim waiting for $waitMs ($actual) ms")
+    Thread.sleep(actual)
   }
 
   doSchedule(1)

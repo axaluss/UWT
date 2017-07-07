@@ -10,22 +10,38 @@ import scala.io.Source
   */
 object DryRun extends App with UWT {
 
-  case class IntPin(i: Int) extends Pin {
+  case class IntOutputPin(i: Int) extends OutputPin {
     override def off: Unit = println(s"pin $i off")
 
     override def on: Unit = println(s"pin $i on")
+
+    override def shutdown: Unit = {
+      println(s"shutting down pin $i")
+    }
   }
 
-  implicit def i2p(i: Int): Pin = {
-    IntPin(i)
+  case class IntInputPin(i: Int) extends InputPin {
+    override def off: Unit = {}
+
+    override def on: Unit = {}
+
+
+    override def shutdown: Unit = {
+      println(s"shutting down pin $i")
+    }
   }
 
+  implicit def i2p(i: Int): OutputPin = {
+    IntOutputPin(i)
+  }
+
+  implicit def i2p2(i: Int): InputPin = {
+    IntInputPin(i)
+  }
 
   def setup: Net = {
     RealNet.net(this)
   }
-
-
 
 
   override def getWeatherData: WeatherDataSet = {
@@ -33,15 +49,51 @@ object DryRun extends App with UWT {
     val option = res.toOption
     option.get
   }
-
+ 
   override def doWait(waitMs: Long): Unit = {
-    val l = (waitMs / 1000) + 1
-    val actual = 100 * l
-    println(s"sim waiting for $waitMs ($actual) ms")
-    Thread.sleep(actual)
+    println(s"sim waiting for $waitMs ms")
+    val last = curMs
+    while (curMs - last < waitMs) {
+      Thread.sleep(math.min(waitMs,stepRangeMs/2))
+    }
   }
 
-  doSchedule(1)
+
+  var lastMs = System.currentTimeMillis()
+
+  val stepFactor = 100.0
+
+  val stepRangeMs = 5
+
+  def step: Unit = {
+    {
+      lastMs = lastMs + (stepRangeMs * stepFactor).toLong
+    }
+    {
+      val x: Double = 1000 / (5.5 * 15)
+      val ms = curMs
+      val eventCount = (stepRangeMs * stepFactor) / x
+      val actualCount = (0.15 * eventCount + (math.random() * 0.85 * eventCount)).toInt
+      (1 to actualCount).toList.foreach(i => net.flows.head.pump.flowMeter.pin.handlers.foreach(h => {
+        h((ms + (i * x)).toLong)
+      }))
+    }
+  }
+
+  override def curMs: Long = {
+    lastMs
+  }
+
 
   override def shouldStop: Boolean = false
+
+  new Thread(() => {
+    while (true) {
+      step
+      //      println(s"sleeping for $stepRangeMs")
+      Thread.sleep(stepRangeMs)
+    }
+  }).start()
+  doSchedule(0.000277778)
+
 }

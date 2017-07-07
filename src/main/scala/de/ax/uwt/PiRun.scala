@@ -1,7 +1,13 @@
 package de.ax.uwt
 
 import com.pi4j.io.gpio._
-import de.ax.uwt.DryRun.doWater
+import com.pi4j.io.gpio.event.{GpioPinDigitalStateChangeEvent, GpioPinListenerDigital}
+import de.ax.uwt.DryRun.{doSchedule, doWater}
+import io.circe.parser.decode
+import io.circe.generic.auto._
+import io.circe.parser._
+
+import scala.io.Source
 
 /**
   * Created by nyxos on 20.06.17.
@@ -9,30 +15,67 @@ import de.ax.uwt.DryRun.doWater
 object PiRun extends App with UWT {
 
 
-  case class IntPin(i: Int) extends Pin {
+  case class IntOutputPin(i: Int) extends OutputPin {
     private val pin = RaspiPin.getPinByName(s"GPIO $i")
-    val digitalOutput: GpioPinDigitalOutput = GpioFactory.getInstance.provisionDigitalOutputPin(pin, pin.getName, PinState.HIGH)
+    val digitalOutput: GpioPinDigitalOutput = GpioFactory.getInstance.provisionDigitalOutputPin(pin, pin.getName, PinState.LOW)
     off
 
     override def off: Unit = digitalOutput.low()
 
     override def on: Unit = digitalOutput.high()
+
+    override def shutdown: Unit = {
+      GpioFactory.getInstance.unprovisionPin(digitalOutput)
+    }
   }
 
-  implicit def i2p(i: Int): Pin = {
-    IntPin(i)
+  case class IntInputPin(i: Int) extends InputPin {
+    private val pin = RaspiPin.getPinByName(s"GPIO $i")
+    val digitalInput: GpioPinDigitalInput = GpioFactory.getInstance.provisionDigitalInputPin(pin, pin.getName, PinPullResistance.PULL_DOWN)
+
+    digitalInput.addListener(new GpioPinListenerDigital {
+      override def handleGpioPinDigitalStateChangeEvent(event: GpioPinDigitalStateChangeEvent): Unit = {
+        if (event.getState.isHigh) {
+          val millis = System.currentTimeMillis
+          handlers.foreach(h => h(millis))
+        }
+      }
+    })
+
+    override def off: Unit = {}
+
+    override def on: Unit = {}
+
+    override def shutdown: Unit = {
+      GpioFactory.getInstance.unprovisionPin(digitalInput)
+    }
+  }
+
+  implicit def i2p(i: Int): OutputPin = {
+    IntOutputPin(i)
+  }
+
+  implicit def i2p2(i: Int): InputPin = {
+    IntInputPin(i)
   }
 
   def setup: Net = {
-    RealNet.net(this)
+    QuickTestNet.net(this)
   }
 
 
-  doWater
+  override def getWeatherData: WeatherDataSet = {
+    val res = decode[WeatherDataSet](Source.fromFile("testdata/meisenbach.json").mkString)
+    val option = res.toOption
+    option.get
+  }
 
-  override def getWeatherData: WeatherDataSet = ???
+  override def doWait(waitMs: Long): Unit = Thread.sleep(waitMs)
 
-  override def doWait(waitMs: Long): Unit = ???
+  override def shouldStop: Boolean = false
 
-  override def shouldStop: Boolean = ???
+
+  doSchedule(0.002777778)
+
+  override def curMs: Long = System.currentTimeMillis()
 }

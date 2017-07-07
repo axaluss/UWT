@@ -19,3 +19,5 @@ libraryDependencies ++= Seq(
 ).map(_ % circeVersion)
 
 libraryDependencies += "com.github.nscala-time" %% "nscala-time" % "2.16.0"
+
+mainClass := Some("de.ax.uwt.PiRun")

@@ -61,7 +61,7 @@ object DryRun extends App with UWT {
 
   var lastMs = System.currentTimeMillis()
 
-  val stepFactor = 100.0
+  val stepFactor = 20.0
 
   val stepRangeMs = 5
 
@@ -94,6 +94,10 @@ object DryRun extends App with UWT {
       Thread.sleep(stepRangeMs)
     }
   }).start()
-  doSchedule(0.000277778)
+  while (true){
+    doWater
+    println("\n\n\nWATERED EVERYTHING \n\n\n")
+  }
+//  doSchedule(0.000277778)
 
 }

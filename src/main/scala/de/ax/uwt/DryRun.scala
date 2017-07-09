@@ -18,17 +18,17 @@ object DryRun extends App with UWT {
     override def shutdown: Unit = {
       println(s"shutting down pin $i")
     }
+
+    override def identifier: Any = i
   }
 
   case class IntInputPin(i: Int) extends InputPin {
-    override def off: Unit = {}
-
-    override def on: Unit = {}
-
 
     override def shutdown: Unit = {
       println(s"shutting down pin $i")
     }
+
+    override def identifier: Any = i
   }
 
   implicit def i2p(i: Int): OutputPin = {
@@ -39,23 +39,24 @@ object DryRun extends App with UWT {
     IntInputPin(i)
   }
 
+
   def setup: Net = {
     RealNet.net(this)
   }
-
 
   override def getWeatherData: WeatherDataSet = {
     val res = decode[WeatherDataSet](Source.fromFile("testdata/meisenbach.json").mkString)
     val option = res.toOption
     option.get
   }
- 
+
   override def doWait(waitMs: Long): Unit = {
     println(s"sim waiting for $waitMs ms")
     val last = curMs
     while (curMs - last < waitMs) {
-      Thread.sleep(math.min(waitMs,stepRangeMs/2))
+      Thread.sleep(math.min(waitMs, stepRangeMs / 2))
     }
+    stepHygroMeter
   }
 
 
@@ -65,19 +66,29 @@ object DryRun extends App with UWT {
 
   val stepRangeMs = 5
 
+
   def step: Unit = {
-    {
-      lastMs = lastMs + (stepRangeMs * stepFactor).toLong
-    }
-    {
-      val x: Double = 1000 / (5.5 * 15)
-      val ms = curMs
-      val eventCount = (stepRangeMs * stepFactor) / x
-      val actualCount = (0.15 * eventCount + (math.random() * 0.85 * eventCount)).toInt
-      (1 to actualCount).toList.foreach(i => net.flows.head.pump.flowMeter.pin.handlers.foreach(h => {
-        h((ms + (i * x)).toLong)
-      }))
-    }
+    stepTime
+    stepFlowMeter
+    stepHygroMeter
+  }
+
+  def stepHygroMeter: Unit = {
+    net.flows.head.mSensor.pin.handlers.foreach(_.apply(4711))
+  }
+
+  private def stepTime = {
+    lastMs = lastMs + (stepRangeMs * stepFactor).toLong
+  }
+
+  private def stepFlowMeter = {
+    val x: Double = 1000 / (5.5 * 15)
+    val ms = curMs
+    val eventCount = (stepRangeMs * stepFactor) / x
+    val actualCount = (0.15 * eventCount + (math.random() * 0.85 * eventCount)).toInt
+    (1 to actualCount).toList.foreach(i => net.flows.head.pump.flowMeter.pin.handlers.foreach(h => {
+      h((ms + (i * x)).toLong)
+    }))
   }
 
   override def curMs: Long = {
@@ -94,10 +105,10 @@ object DryRun extends App with UWT {
       Thread.sleep(stepRangeMs)
     }
   }).start()
-  while (true){
+  while (true) {
     doWater
     println("\n\n\nWATERED EVERYTHING \n\n\n")
   }
-//  doSchedule(0.000277778)
+  //  doSchedule(0.000277778)
 
 }

@@ -14,19 +14,25 @@ trait UWT {
   implicit def i2p2(i: Int): InputPin
 
   trait Pin {
-
-
-    def off
-
-    def on
+    def identifier: Any
 
     def shutdown
 
   }
 
-  trait OutputPin extends Pin
+  trait OutputPin extends Pin {
+
+
+    def off
+
+    def on
+  }
 
   trait InputPin extends Pin {
+    def clearHandlers = {
+      handlers = List.empty
+    }
+
     var handlers: List[(Long) => Unit] = List.empty
 
     def addHandler(h: (Long) => Unit): Unit = {
@@ -34,8 +40,12 @@ trait UWT {
     }
   }
 
+  trait Put {
+    val name: String
+    val pin: Pin
+  }
 
-  abstract class Output {
+  abstract class Output extends Put {
     val name: String
     val pin: OutputPin
     var isOn = false
@@ -55,27 +65,52 @@ trait UWT {
 
   }
 
-  abstract class Input {
-    val name: String
-    val pin: InputPin
+  abstract class Input extends Put {
+
 
   }
 
 
   case class Valve(name: String, pin: OutputPin) extends Output
 
+  case class Switch(name: String, pin: OutputPin) extends Output
+
   case class Pump(name: String, pin: OutputPin, flowMeter: FlowMeter) extends Output
 
   case class FlowMeter(name: String, pin: InputPin) extends Input
 
+  case class MoistureSensor(name: String, pin: InputPin, switch: Switch) extends Input {
+    def hasWater: Boolean = {
+      var hasWater = false
+      pin.addHandler((t) => {
+        hasWater = true
+      })
+      switch.on
+      doWait(500)
+      switch.off
+      pin.clearHandlers
+      hasWater
+    }
 
-  case class Net(var elms: List[Output] = List.empty,
+  }
+
+
+  case class Net(var elms: List[Put] = List.empty,
                  var flows: List[Flow] = List.empty) {
+
+
     def valve(name: String, pin: OutputPin): Valve = {
       val out1 = Valve(name, pin)
 
       addElm(out1)
       out1
+    }
+
+    var switch12V: Option[Output] = Option.empty
+
+    def switch12v(s: Output) = {
+      switch12V = Some(s)
+      switch12V.foreach(_.off)
     }
 
     var flowEvents: List[Long] = List.empty
@@ -84,7 +119,6 @@ trait UWT {
       flowEvents = (i +: flowEvents).filter((e: Long) => (curMs - e) < 1000)
     }
 
-
     def pump(name: String, pin: OutputPin, flowMeter: FlowMeter): Pump = {
       flowMeter.pin.addHandler(addFlowEvent)
       val out1 = Pump(name, pin, flowMeter)
@@ -92,14 +126,36 @@ trait UWT {
       out1
     }
 
-    private def addElm(out1: Output): Unit = {
-      assert(!elms.exists(_.pin == out1.pin), s"pin ${out1.pin} already in use")
-      assert(!elms.exists(_.name == out1.name), s"name '${out1.name}' for valve already in use")
+
+    def moistureSensor(name: String, pin: InputPin, switch: Switch) = {
+      val s = MoistureSensor(name, pin, switch)
+      addElm(s)
+      s
+    }
+
+    def switch(name: String, pin: OutputPin): Switch = {
+      val out1 = Switch(name, pin)
+
+      addElm(out1)
+      out1
+    }
+
+    def flowMeter(name: String, pin: InputPin) = {
+      val s = FlowMeter(name, pin)
+      addElm(s)
+      s
+    }
+
+    private def addElm(out1: Put): Unit = {
+      val puts = elms.filter(_.pin.identifier == out1.pin.identifier)
+      assert(puts.isEmpty, s"pin $out1 already in use in $puts")
+      val puts1 = elms.filter(_.name == out1.name)
+      assert(puts1.isEmpty, s"name '$out1' for valve already in use in $puts1")
       elms = elms :+ out1
     }
 
-    def flow(name: String, pump: Pump, valve: Valve, flowPlan: FlowPlan): Flow = {
-      val flow1 = Flow(name: String, pump: Pump, valve: Valve, flowPlan)
+    def flow(name: String, pump: Pump, valve: Valve, flowPlan: FlowPlan, mSensor: MoistureSensor): Flow = {
+      val flow1 = Flow(name: String, pump: Pump, valve: Valve, flowPlan, mSensor)
       assert(!flows.exists(f => f.valve == valve), s"valve $valve for flow $flow1 already in use")
       assert(!flows.exists(f => f.name == name), s"name '$name' for flow $flow1 already in use")
       flows = flows :+ flow1
@@ -107,8 +163,7 @@ trait UWT {
     }
   }
 
-
-  case class Flow(name: String, pump: Pump, valve: Valve, flowPlan: FlowPlan)
+  case class Flow(name: String, pump: Pump, valve: Valve, flowPlan: FlowPlan, mSensor: MoistureSensor)
 
   case class FlowPlan(name: String, minFlow: Double, maxFlow: Double)
 
@@ -127,7 +182,7 @@ trait UWT {
 
   def valueFactor = wateringWaitTimeHours / 24.0
 
-  def calcLitersFromFlowPlan(flowPlan: FlowPlan): Double = {
+  def calcLitersFromFlowPlan(flowPlan: FlowPlan, mSensor: MoistureSensor): Double = {
     val datas = getWeatherData.hourly.data.filter { dt =>
       val radius = (wateringWaitTimeHours / 2).toInt
       dt.dateTime.isAfter(DateTime.now.minusHours(radius)) || dt.dateTime.isBefore(DateTime.now.plusHours(radius))
@@ -137,10 +192,15 @@ trait UWT {
     val minTemp = 15
     val maxTemp = 30
     val tFactor: Double = (temp - minTemp) / (maxTemp - minTemp)
-    val v = ((flowPlan.maxFlow * valueFactor) - rainLiters * valueFactor) * (tFactor.abs)
+    val v = ((flowPlan.maxFlow * valueFactor) - (rainLiters * valueFactor)) * tFactor.abs
     val normalized = math.min(math.max(flowPlan.minFlow * valueFactor, v), flowPlan.maxFlow * valueFactor)
-    println(s"to water $v=$normalized ((${flowPlan.maxFlow}-$rainLiters)*${tFactor.abs})")
-    normalized
+    println(s"to water $v=$normalized ((${flowPlan.maxFlow} * $valueFactor -($rainLiters * $valueFactor))*${tFactor.abs})")
+    if (mSensor.hasWater) {
+      println("had water!")
+      normalized * 0.5
+    } else {
+      normalized
+    }
   }
 
   def doWait(waitMs: Long): Unit
@@ -160,9 +220,9 @@ trait UWT {
       var lastCheck = curMs
       doWait(100)
       litersFlowed += (pumpLitersPerMinute / 60.0 / 1000.0) * (curMs - lastCheck)
-      if (curMs - lastPrint > 1000|| litersFlowed > liters) {
+      if (curMs - lastPrint > 1000 || litersFlowed > liters) {
         //      println(s"$curMs - $lastCheck = ${(curMs - lastCheck)}")
-        lastPrint=curMs
+        lastPrint = curMs
         println(s"waited ${curMs - started} ms for $litersFlowed l with $pumpLitersPerMinute l/m")
       }
     }
@@ -172,23 +232,28 @@ trait UWT {
 
   def doWater: Unit = {
     checkAllOff(net)
-    net.flows.foreach { case f@Flow(name, pump, valve, flowPlan) =>
-      val liters = calcLitersFromFlowPlan(flowPlan)
+    net.flows.foreach { case f@Flow(name, pump, valve, flowPlan, mSensor) =>
+      val liters = calcLitersFromFlowPlan(flowPlan, mSensor)
       println(s"watering $liters l for flow $f")
       try {
+        net.switch12V.foreach(_.on)
         valve.on
         pump.on
         waitForLiters(liters)
       } finally {
         pump.off
         valve.off
+        net.switch12V.foreach(_.off)
       }
     }
   }
 
 
   private def checkAllOff(net: Net) = {
-    val relaises = net.elms.filter(_.isOn)
+    val relaises = net.elms.filter {
+      case e: Output => e.isOn
+      case _ => false
+    }
     assert(relaises.isEmpty, s"there were enabled elements: $relaises")
   }
 

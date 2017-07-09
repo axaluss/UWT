@@ -27,6 +27,8 @@ object PiRun extends App with UWT {
     override def shutdown: Unit = {
       GpioFactory.getInstance.unprovisionPin(digitalOutput)
     }
+
+    override def identifier: Any = i
   }
 
   case class IntInputPin(i: Int) extends InputPin {
@@ -42,13 +44,11 @@ object PiRun extends App with UWT {
       }
     })
 
-    override def off: Unit = {}
-
-    override def on: Unit = {}
-
     override def shutdown: Unit = {
       GpioFactory.getInstance.unprovisionPin(digitalInput)
     }
+
+    override def identifier: Any = i
   }
 
   implicit def i2p(i: Int): OutputPin = {

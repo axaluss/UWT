@@ -197,7 +197,7 @@ trait UWT {
     println(s"to water $v=$normalized ((${flowPlan.maxFlow} * $valueFactor -($rainLiters * $valueFactor))*${tFactor.abs})")
     if (mSensor.hasWater) {
       println("had water!")
-      normalized * 0.5
+      normalized * 0.1
     } else {
       normalized
     }
@@ -264,7 +264,12 @@ trait UWT {
     wateringWaitTimeHours = loopHours
     if (!shouldStop) {
       if (DateTime.now.isAfter(start)) {
-        doWater
+        try {
+          doWater
+        } catch {
+          case e => WebServer.errors = e +: WebServer.errors
+            throw e
+        }
         doSchedule(loopHours, start.plusSeconds((loopHours * 60 * 60).toInt))
       } else {
         doWait(1000)

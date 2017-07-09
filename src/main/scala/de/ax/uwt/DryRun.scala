@@ -74,7 +74,7 @@ object DryRun extends App with UWT {
   }
 
   def stepHygroMeter: Unit = {
-    net.flows.head.mSensor.pin.handlers.foreach(_.apply(4711))
+//    net.flows.head.mSensor.pin.handlers.foreach(_.apply(4711))
   }
 
   private def stepTime = {
@@ -107,6 +107,7 @@ object DryRun extends App with UWT {
   }).start()
   while (true) {
     doWater
+    println(s"history: ${flowHistory.mkString("\n")}")
     println("\n\n\nWATERED EVERYTHING \n\n\n")
   }
   //  doSchedule(0.000277778)

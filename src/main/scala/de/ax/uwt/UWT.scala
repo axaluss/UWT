@@ -16,6 +16,18 @@ trait UWT {
   trait Pin {
     def identifier: Any
 
+
+    override def equals(obj: scala.Any): Boolean = {
+      obj match {
+        case null =>
+          false
+        case pin: Pin =>
+          pin.identifier == identifier
+        case _ =>
+          false
+      }
+    }
+
     def shutdown
 
   }
@@ -91,7 +103,6 @@ trait UWT {
       pin.clearHandlers
       hasWater
     }
-
   }
 
 
@@ -147,7 +158,7 @@ trait UWT {
     }
 
     private def addElm(out1: Put): Unit = {
-      val puts = elms.filter(_.pin.identifier == out1.pin.identifier)
+      val puts = elms.filter(_.pin == out1.pin)
       assert(puts.isEmpty, s"pin $out1 already in use in $puts")
       val puts1 = elms.filter(_.name == out1.name)
       assert(puts1.isEmpty, s"name '$out1' for valve already in use in $puts1")
@@ -230,16 +241,28 @@ trait UWT {
 
   def curMs: Long
 
+  case class FlowHistoryEntry(f: Flow, actualLiters: Double, durationMs: Long) {
+    val time: Long = curMs
+  }
+
+  var flowHistory: Seq[FlowHistoryEntry] = Seq.empty
+
+  def addHistory(e: FlowHistoryEntry) {
+    flowHistory = (e +: flowHistory).filter(curMs - _.time < (1000 * 60 * 60 * 24 * 7))
+  }
+
   def doWater: Unit = {
     checkAllOff(net)
     net.flows.foreach { case f@Flow(name, pump, valve, flowPlan, mSensor) =>
       val liters = calcLitersFromFlowPlan(flowPlan, mSensor)
       println(s"watering $liters l for flow $f")
       try {
+        val start = curMs
         net.switch12V.foreach(_.on)
         valve.on
         pump.on
         waitForLiters(liters)
+        addHistory(FlowHistoryEntry(f, liters, curMs - start))
       } finally {
         pump.off
         valve.off

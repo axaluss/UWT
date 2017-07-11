@@ -82,7 +82,6 @@ trait UWT {
 
   }
 
-
   case class Valve(name: String, pin: OutputPin) extends Output
 
   case class Switch(name: String, pin: OutputPin) extends Output
@@ -94,13 +93,18 @@ trait UWT {
   case class MoistureSensor(name: String, pin: InputPin, switch: Switch) extends Input {
     def hasWater: Boolean = {
       var hasWater = false
-      pin.addHandler((t) => {
-        hasWater = true
-      })
-      switch.on
-      doWait(500)
-      switch.off
-      pin.clearHandlers
+//      while (true) {
+        println("checking for water")
+        pin.addHandler((t) => {
+          hasWater = true
+          println("MoistureSensor got state change event")
+        })
+        switch.on
+        doWait(500)
+        switch.off
+        pin.clearHandlers
+        doWait(2000)
+//      }
       hasWater
     }
   }
@@ -234,7 +238,7 @@ trait UWT {
       if (curMs - lastPrint > 1000 || litersFlowed > liters) {
         //      println(s"$curMs - $lastCheck = ${(curMs - lastCheck)}")
         lastPrint = curMs
-        println(s"waited ${curMs - started} ms for $litersFlowed l / $liters l =${( 100*litersFlowed/liters).toInt}% with $pumpLitersPerMinute l/m")
+        println(s"waited ${curMs - started} ms for $litersFlowed l / $liters l =${(100 * litersFlowed / liters).toInt}% with $pumpLitersPerMinute l/m")
       }
     }
   }

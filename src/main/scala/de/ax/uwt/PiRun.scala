@@ -36,6 +36,7 @@ class PiRun extends UWT {
 
     digitalInput.addListener(new GpioPinListenerDigital {
       override def handleGpioPinDigitalStateChangeEvent(event: GpioPinDigitalStateChangeEvent): Unit = {
+        println(s"event state of $i is ${event.getState.getName}")
         if (event.getState.isHigh) {
           val millis = curMs
           handlers.foreach(h => h(millis))

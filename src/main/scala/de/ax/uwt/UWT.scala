@@ -184,7 +184,7 @@ trait UWT {
 
 
   def pumpLitersPerMinute: Double = {
-    val es = net.flowEvents.filter((e: Long) => (e - curMs) < 1000)
+    val es = net.flowEvents.filter((e: Long) => (curMs - e) < 1000)
     es.size / 5.5
   }
 
@@ -227,7 +227,7 @@ trait UWT {
     }
     println(s"waiting for $liters l with $pumpLitersPerMinute l/m")
     var lastPrint = started
-    while (litersFlowed < liters) {
+    while ((litersFlowed - liters).abs < 0.001) {
       var lastCheck = curMs
       doWait(100)
       litersFlowed += (pumpLitersPerMinute / 60.0 / 1000.0) * (curMs - lastCheck)

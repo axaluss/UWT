@@ -38,7 +38,7 @@ object PiRun extends App with UWT {
     digitalInput.addListener(new GpioPinListenerDigital {
       override def handleGpioPinDigitalStateChangeEvent(event: GpioPinDigitalStateChangeEvent): Unit = {
         if (event.getState.isHigh) {
-          val millis = System.currentTimeMillis
+          val millis = curMs
           handlers.foreach(h => h(millis))
         }
       }
@@ -60,7 +60,7 @@ object PiRun extends App with UWT {
   }
 
   def setup: Net = {
-    QuickTestNet.net(this)
+    RealNet.net(this)
   }
 
 

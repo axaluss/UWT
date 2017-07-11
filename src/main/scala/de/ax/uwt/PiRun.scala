@@ -2,7 +2,6 @@ package de.ax.uwt
 
 import com.pi4j.io.gpio._
 import com.pi4j.io.gpio.event.{GpioPinDigitalStateChangeEvent, GpioPinListenerDigital}
-import de.ax.uwt.DryRun.{doSchedule, doWater}
 import io.circe.parser.decode
 import io.circe.generic.auto._
 import io.circe.parser._
@@ -12,7 +11,7 @@ import scala.io.Source
 /**
   * Created by nyxos on 20.06.17.
   */
-object PiRun extends App with UWT {
+class PiRun extends UWT {
 
 
   case class IntOutputPin(i: Int) extends OutputPin {
@@ -75,7 +74,9 @@ object PiRun extends App with UWT {
   override def shouldStop: Boolean = false
 
 
-  doSchedule(0.002777778)
-
   override def curMs: Long = System.currentTimeMillis()
+
+  def run: Unit = {
+    doSchedule(0.002777778)
+  }
 }

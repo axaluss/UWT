@@ -12,8 +12,8 @@ object QuickTestNet {
     import net.{flow, pump, valve, moistureSensor, switch}
     val switch12V = switch("switch12V", 0)
     net.switch12v(switch12V)
-    val switchHygro = switch("switchHygro", 0)
-    val pump1 = pump("pump", 0, FlowMeter("FlowMeter", 4))
+    val switchHygro = switch("switchHygro", 6)
+    val pump1 = pump("pump", 7, FlowMeter("FlowMeter", 4))
     val valve1 = valve("valve1", 2)
     val valve3 = valve("valve2", 3)
     val fp_hort = FlowPlan("hortensien", 1, 5000)

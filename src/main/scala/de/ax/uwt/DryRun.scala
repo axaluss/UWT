@@ -8,7 +8,7 @@ import scala.io.Source
 /**
   * Created by nyxos on 20.06.17.
   */
-object DryRun extends App with UWT {
+class DryRun extends UWT {
 
   case class IntOutputPin(i: Int) extends OutputPin {
     override def off: Unit = println(s"pin $i off")
@@ -41,7 +41,7 @@ object DryRun extends App with UWT {
 
 
   def setup: Net = {
-    RealNet.net(this)
+    QuickTestNet.net(this)
   }
 
   override def getWeatherData: WeatherDataSet = {
@@ -98,18 +98,22 @@ object DryRun extends App with UWT {
 
   override def shouldStop: Boolean = false
 
-  new Thread(() => {
+
+
+  def run: Unit = {
+    new Thread(() => {
+      while (true) {
+        step
+        //      println(s"sleeping for $stepRangeMs")
+        Thread.sleep(stepRangeMs)
+      }
+    }).start()
     while (true) {
-      step
-      //      println(s"sleeping for $stepRangeMs")
-      Thread.sleep(stepRangeMs)
+      doWater
+      println(s"history: ${flowHistory.mkString("\n")}")
+      println("\n\n\nWATERED EVERYTHING \n\n\n")
     }
-  }).start()
-  while (true) {
-    doWater
-    println(s"history: ${flowHistory.mkString("\n")}")
-    println("\n\n\nWATERED EVERYTHING \n\n\n")
+    //  doSchedule(0.000277778)
   }
-  //  doSchedule(0.000277778)
 
 }

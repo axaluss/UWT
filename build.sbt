@@ -22,4 +22,4 @@ libraryDependencies += "com.github.nscala-time" %% "nscala-time" % "2.16.0"
 
 libraryDependencies += "com.typesafe.akka" %% "akka-http" % "10.0.9"
 
-mainClass := Some("de.ax.uwt.PiRun")
+mainClass := Some("de.ax.uwt.Launscher")

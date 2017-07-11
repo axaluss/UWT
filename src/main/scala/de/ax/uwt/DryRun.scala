@@ -41,7 +41,7 @@ class DryRun extends UWT {
 
 
   def setup: Net = {
-    QuickTestNet.net(this)
+    RealNet.net(this)
   }
 
   override def getWeatherData: WeatherDataSet = {
@@ -51,7 +51,7 @@ class DryRun extends UWT {
   }
 
   override def doWait(waitMs: Long): Unit = {
-    println(s"sim waiting for $waitMs ms")
+//    println(s"sim waiting for $waitMs ms")
     val last = curMs
     while (curMs - last < waitMs) {
       Thread.sleep(math.min(waitMs, stepRangeMs / 2))
@@ -116,4 +116,10 @@ class DryRun extends UWT {
     //  doSchedule(0.000277778)
   }
 
+  run
+
+}
+
+object Dry extends App{
+  new DryRun().run
 }

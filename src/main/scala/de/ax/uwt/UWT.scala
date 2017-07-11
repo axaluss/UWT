@@ -227,14 +227,14 @@ trait UWT {
     }
     println(s"waiting for $liters l with $pumpLitersPerMinute l/m")
     var lastPrint = started
-    while ((litersFlowed - liters).abs < 0.001) {
+    while (litersFlowed < liters && liters > 0.001) {
       var lastCheck = curMs
       doWait(100)
-      litersFlowed += (pumpLitersPerMinute / 60.0 / 1000.0) * (curMs - lastCheck)
+      litersFlowed += (pumpLitersPerMinute / 60.0 / 1000.0) * (curMs - lastCheck).toFloat
       if (curMs - lastPrint > 1000 || litersFlowed > liters) {
         //      println(s"$curMs - $lastCheck = ${(curMs - lastCheck)}")
         lastPrint = curMs
-        println(s"waited ${curMs - started} ms for $litersFlowed l with $pumpLitersPerMinute l/m")
+        println(s"waited ${curMs - started} ms for $litersFlowed l / $liters l =${( 100*litersFlowed/liters).toInt}% with $pumpLitersPerMinute l/m")
       }
     }
   }

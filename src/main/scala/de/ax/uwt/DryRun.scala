@@ -51,7 +51,7 @@ class DryRun extends UWT {
   }
 
   override def doWait(waitMs: Long): Unit = {
-//    println(s"sim waiting for $waitMs ms")
+    //    println(s"sim waiting for $waitMs ms")
     val last = curMs
     while (curMs - last < waitMs) {
       Thread.sleep(math.min(waitMs, stepRangeMs / 2))
@@ -74,7 +74,7 @@ class DryRun extends UWT {
   }
 
   def stepHygroMeter: Unit = {
-//    net.flows.head.mSensor.pin.handlers.foreach(_.apply(4711))
+    //    net.flows.head.mSensor.pin.handlers.foreach(_.apply(4711))
   }
 
   private def stepTime = {
@@ -87,7 +87,7 @@ class DryRun extends UWT {
     val eventCount = (stepRangeMs * stepFactor) / x
     val actualCount = (0.15 * eventCount + (math.random() * 0.85 * eventCount)).toInt
     (1 to actualCount).toList.foreach(i => net.flows.head.pump.flowMeter.pin.handlers.foreach(h => {
-      h((ms + (i * x)).toLong)
+      h((ms + (i * x)).toLong, true)
     }))
   }
 
@@ -97,7 +97,6 @@ class DryRun extends UWT {
 
 
   override def shouldStop: Boolean = false
-
 
 
   def run: Unit = {
@@ -120,6 +119,7 @@ class DryRun extends UWT {
 
 }
 
-object Dry extends App{
+object Dry extends App {
+  println("Dry.run")
   new DryRun().run
 }

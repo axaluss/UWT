@@ -45,9 +45,9 @@ trait UWT {
       handlers = List.empty
     }
 
-    var handlers: List[(Long) => Unit] = List.empty
+    var handlers: List[(Long, Boolean) => Unit] = List.empty
 
-    def addHandler(h: (Long) => Unit): Unit = {
+    def addHandler(h: (Long, Boolean) => Unit): Unit = {
       handlers = handlers :+ h
     }
   }
@@ -92,23 +92,21 @@ trait UWT {
 
   case class MoistureSensor(name: String, pin: InputPin, switch: Switch) extends Input {
     def hasWater: Boolean = {
-      var hasWater = false
-//      while (true) {
+      var hasWater = true
         println("checking for water")
-        pin.addHandler((t) => {
-          hasWater = true
-          println("MoistureSensor got state change event")
+        pin.addHandler((t, isHigh) => {
+          hasWater = !isHigh
+          println(s"MoistureSensor got state change event isHigh: $isHigh")
+          println(s"hasWater? $hasWater")
         })
         switch.on
         doWait(500)
         switch.off
         pin.clearHandlers
         doWait(2000)
-//      }
       hasWater
     }
   }
-
 
   case class Net(var elms: List[Put] = List.empty,
                  var flows: List[Flow] = List.empty) {
@@ -130,8 +128,10 @@ trait UWT {
 
     var flowEvents: List[Long] = List.empty
 
-    def addFlowEvent(i: Long): Unit = {
-      flowEvents = (i +: flowEvents).filter((e: Long) => (curMs - e) < 1000)
+    def addFlowEvent(i: Long, isHigh: Boolean): Unit = {
+      if (isHigh) {
+        flowEvents = (i +: flowEvents).filter((e: Long) => (curMs - e) < 1000)
+      }
     }
 
     def pump(name: String, pin: OutputPin, flowMeter: FlowMeter): Pump = {

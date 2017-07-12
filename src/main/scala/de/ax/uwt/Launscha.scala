@@ -9,6 +9,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
   */
 object Launscha extends App {
 
+  println("Launsching")
 
   val runner=Future{
     new PiRun().run

@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Bewässerungsstatus</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.6.0/Chart.bundle.min.js"></script>
+
+</head>
+<body>
+<script>
+    $('body').ready(function () {
+        jQuery.getJSON("/statusjson", function (dta) {
+            console.log(dta);
+            var i = 0;
+            for (var flowName in dta.data) {
+                i += 1;
+                if (dta.data.hasOwnProperty(flowName)) {
+                    var d = dta.data[flowName];
+                    $("body")
+                        .append(
+                            $("<div style='width: 800px;height: 500px;'>")
+                                .append(
+                                    $("<h4>" + flowName + "</h4>")
+                                ).append(
+                                $(" <canvas id='myChart" + i + "'></canvas>")
+                            )
+                        );
+        var ctx = document.getElementById("myChart" + i).getContext('2d');
+                    var myChart = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: d.labels,
+                            datasets: [{
+                                label: 'liters',
+                                data: d.dataSets[0].data,
+                                borderWidth: 1
+                            }]
+                        },
+                        options: {
+                            scales: {
+                                yAxes: [{
+                                    ticks: {
+                                        beginAtZero: true
+                                    }
+                                }]
+                            }
+                        }
+                    });
+                }
+            }
+
+
+        })
+
+    });
+</script>
+</body>
+</html>

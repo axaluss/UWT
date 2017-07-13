@@ -11,9 +11,14 @@ object Launscha extends App {
 
   println("Launsching")
 
+  val piRun = new PiRun()
   val runner=Future{
-    new PiRun().run
+    piRun.run
   }
-  WebServer.main(Array.empty)
+
+
+   val server = WebServer(Some(piRun))
+  server.run()
+
 
 }

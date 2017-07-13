@@ -8,7 +8,28 @@ import scala.annotation.tailrec
   * Created by nyxos on 14.06.17.
   */
 
-trait UWT {
+trait FlowLike {
+  def name: String
+}
+
+trait HasHistory {
+  def curMs: Long
+
+  case class FlowHistoryEntry(f: FlowLike, actualLiters: Double, durationMs: Long) {
+    val time: Long = curMs
+  }
+
+  var flowHistory: Seq[FlowHistoryEntry] = Seq.empty
+
+  val weekInMs = 1000 * 60 * 60 * 24 * 7
+
+  def addHistory(e: FlowHistoryEntry) {
+
+    flowHistory = (e +: flowHistory).filter(curMs - _.time < weekInMs)
+  }
+}
+
+trait UWT extends HasHistory{
   implicit def i2p(i: Int): OutputPin
 
   implicit def i2p2(i: Int): InputPin
@@ -66,11 +87,13 @@ trait UWT {
     def isOff = !isOn
 
     def off: Unit = {
+      doWait(50)
       pin.off
       isOn = false
     }
 
     def on: Unit = {
+      doWait(50)
       pin.on
       isOn = true
     }
@@ -93,17 +116,17 @@ trait UWT {
   case class MoistureSensor(name: String, pin: InputPin, switch: Switch) extends Input {
     def hasWater: Boolean = {
       var hasWater = true
-        println("checking for water")
-        pin.addHandler((t, isHigh) => {
-          hasWater = !isHigh
-          println(s"MoistureSensor got state change event isHigh: $isHigh")
-          println(s"hasWater? $hasWater")
-        })
-        switch.on
-        doWait(500)
-        switch.off
-        pin.clearHandlers
-        doWait(2000)
+      println("checking for water")
+      pin.addHandler((t, isHigh) => {
+        hasWater = !isHigh
+        println(s"MoistureSensor got state change event isHigh: $isHigh")
+        println(s"hasWater? $hasWater")
+      })
+      switch.on
+      doWait(500)
+      switch.off
+      pin.clearHandlers
+      doWait(2000)
       hasWater
     }
   }
@@ -178,7 +201,7 @@ trait UWT {
     }
   }
 
-  case class Flow(name: String, pump: Pump, valve: Valve, flowPlan: FlowPlan, mSensor: MoistureSensor)
+  case class Flow(name: String, pump: Pump, valve: Valve, flowPlan: FlowPlan, mSensor: MoistureSensor) extends FlowLike
 
   case class FlowPlan(name: String, minFlow: Double, maxFlow: Double)
 
@@ -245,15 +268,6 @@ trait UWT {
 
   def curMs: Long
 
-  case class FlowHistoryEntry(f: Flow, actualLiters: Double, durationMs: Long) {
-    val time: Long = curMs
-  }
-
-  var flowHistory: Seq[FlowHistoryEntry] = Seq.empty
-
-  def addHistory(e: FlowHistoryEntry) {
-    flowHistory = (e +: flowHistory).filter(curMs - _.time < (1000 * 60 * 60 * 24 * 7))
-  }
 
   def doWater: Unit = {
     checkAllOff(net)
@@ -294,7 +308,7 @@ trait UWT {
         try {
           doWater
         } catch {
-          case e => WebServer.errors = e +: WebServer.errors
+          case e => Launscha.server.errors = e +: Launscha.server.errors
             throw e
         }
         doSchedule(loopHours, start.plusSeconds((loopHours * 60 * 60).toInt))

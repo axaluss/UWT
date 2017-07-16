@@ -68,9 +68,9 @@ object ServerTest extends App {
   private val ticks = 100
   val step: Long = weekInMs / ticks
 
-  val flows=List("Hortensie", "Rose", "Efeu")
+  val flows = List("Hortensie", "Rose", "Efeu")
   private val history = new HasHistory {
-    var times = 1.to(ticks+1).map(i => System.currentTimeMillis + (step * i))
+    var times = 1.to(ticks + 1).map(i => System.currentTimeMillis + (step * i))
 
     override def curMs: Long = {
       val h = times.head
@@ -78,12 +78,12 @@ object ServerTest extends App {
       h
     }
 
-    val r=new Random()
+    val r = new Random()
 
     1.to(ticks).foreach(i => {
       flowHistory = FlowHistoryEntry(new FlowLike {
         override def name: String = flows(r.nextInt(flows.size))
-      }, math.random()*10, 10) +: flowHistory
+      }, math.random() * 10, 10) +: flowHistory
     })
 
   }

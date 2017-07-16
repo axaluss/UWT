@@ -1,5 +1,6 @@
 package de.ax.uwt
 
+import com.github.nscala_time.time.Imports
 import com.github.nscala_time.time.Imports.DateTime
 
 import scala.annotation.tailrec
@@ -29,7 +30,7 @@ trait HasHistory {
   }
 }
 
-trait UWT extends HasHistory{
+trait UWT extends HasHistory {
   implicit def i2p(i: Int): OutputPin
 
   implicit def i2p2(i: Int): InputPin
@@ -82,7 +83,6 @@ trait UWT extends HasHistory{
     val name: String
     val pin: OutputPin
     var isOn = false
-    off
 
     def isOff = !isOn
 
@@ -146,7 +146,6 @@ trait UWT extends HasHistory{
 
     def switch12v(s: Output) = {
       switch12V = Some(s)
-      switch12V.foreach(_.off)
     }
 
     var flowEvents: List[Long] = List.empty
@@ -300,11 +299,13 @@ trait UWT extends HasHistory{
 
   def shouldStop: Boolean
 
+  def doWaitUntil(start: Imports.DateTime)
+
   @tailrec final def doSchedule(loopHours: Double, start: DateTime = DateTime.now()): Unit = {
     println(s"waiting for $start")
     wateringWaitTimeHours = loopHours
     if (!shouldStop) {
-      if (DateTime.now.isAfter(start)) {
+      if (new DateTime(curMs).isAfter(start) || new DateTime(curMs) == start) {
         try {
           doWater
         } catch {
@@ -314,6 +315,7 @@ trait UWT extends HasHistory{
         doSchedule(loopHours, start.plusSeconds((loopHours * 60 * 60).toInt))
       } else {
         doWait(1000)
+        doWaitUntil(start)
         doSchedule(loopHours, start)
       }
     }

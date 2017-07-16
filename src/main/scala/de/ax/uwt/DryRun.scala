@@ -1,5 +1,6 @@
 package de.ax.uwt
 
+import com.github.nscala_time.time.Imports
 import io.circe.generic.auto._
 import io.circe.parser._
 
@@ -45,7 +46,7 @@ class DryRun extends UWT {
   }
 
   override def getWeatherData: WeatherDataSet = {
-    val res = decode[WeatherDataSet](Source.fromFile("testdata/meisenbach.json").mkString)
+    val res = decode[WeatherDataSet](Source.fromFile("testdata/anchorage.json").mkString)
     val option = res.toOption
     option.get
   }
@@ -62,7 +63,7 @@ class DryRun extends UWT {
 
   var lastMs = System.currentTimeMillis()
 
-  val stepFactor = 20.0
+  val stepFactor = 50.0
 
   val stepRangeMs = 5
 
@@ -98,6 +99,10 @@ class DryRun extends UWT {
 
   override def shouldStop: Boolean = false
 
+  def doWaitUntil(start: Imports.DateTime): Unit = {
+    lastMs = start.getMillis
+  }
+
 
   def run: Unit = {
     new Thread(() => {
@@ -107,15 +112,14 @@ class DryRun extends UWT {
         Thread.sleep(stepRangeMs)
       }
     }).start()
-    while (true) {
-      doWater
-      println(s"history: ${flowHistory.mkString("\n")}")
-      println("\n\n\nWATERED EVERYTHING \n\n\n")
-    }
-    //  doSchedule(0.000277778)
+    //    while (true) {
+    //      doWater
+    //      println(s"history: ${flowHistory.mkString("\n")}")
+    //      println("\n\n\nWATERED EVERYTHING \n\n\n")
+    //    }
+    doSchedule(24)
   }
 
-  run
 
 }
 

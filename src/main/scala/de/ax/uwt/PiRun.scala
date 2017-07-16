@@ -1,5 +1,6 @@
 package de.ax.uwt
 
+import com.github.nscala_time.time.Imports
 import com.pi4j.io.gpio._
 import com.pi4j.io.gpio.event.{GpioPinDigitalStateChangeEvent, GpioPinListenerDigital}
 import io.circe.parser.decode
@@ -80,5 +81,9 @@ class PiRun extends UWT {
     while(true){
       doWater
     }
+  }
+
+  override def doWaitUntil(start: Imports.DateTime): Unit = {
+    doWait(1000)
   }
 }

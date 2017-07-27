@@ -77,10 +77,10 @@ class PiRun extends UWT {
   override def curMs: Long = System.currentTimeMillis()
 
   def run: Unit = {
-//    doSchedule(0.002777778)
-    while(true){
-      doWater
-    }
+    doSchedule(0.002777778)
+//    while(true){
+//      doWater
+//    }
   }
 
   override def doWaitUntil(start: Imports.DateTime): Unit = {

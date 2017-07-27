@@ -65,9 +65,26 @@ trait UWT extends HasHistory {
   trait InputPin extends Pin {
     def clearHandlers = {
       handlers = List.empty
+      addLogHandler()
     }
 
-    var handlers: List[(Long, Boolean) => Unit] = List.empty
+    var wasActive = false
+
+    def addLogHandler() {
+      wasActive = false
+      addHandler(handleLog)
+    }
+
+    val handleLog: (Long, Boolean) => Unit = {
+      case (l, b) => {
+        if (!wasActive) {
+          println(s"Input Pin $identifier got Event once: ($l,$b)")
+          wasActive = true
+        }
+      }
+    }
+
+    var handlers: List[(Long, Boolean) => Unit] = List(handleLog)
 
     def addHandler(h: (Long, Boolean) => Unit): Unit = {
       handlers = handlers :+ h
@@ -113,21 +130,23 @@ trait UWT extends HasHistory {
 
   case class FlowMeter(name: String, pin: InputPin) extends Input
 
-  case class MoistureSensor(name: String, pin: InputPin, switch: Switch) extends Input {
+  case class MoistureSensor(name: String, pin: InputPin, switch: Switch, activated: Boolean) extends Input {
     def hasWater: Boolean = {
-      var hasWater = true
-      println("checking for water")
-      pin.addHandler((t, isHigh) => {
-        hasWater = !isHigh
-        println(s"MoistureSensor got state change event isHigh: $isHigh")
+      if (activated) {
+        var hasWater = true
+        println("checking for water")
+        pin.addHandler((t, isHigh) => {
+          hasWater = !isHigh
+        })
+        switch.on
+        doWait(500)
+        switch.off
+        pin.clearHandlers
         println(s"hasWater? $hasWater")
-      })
-      switch.on
-      doWait(500)
-      switch.off
-      pin.clearHandlers
-      doWait(2000)
-      hasWater
+        hasWater
+      } else {
+        false
+      }
     }
   }
 
@@ -164,8 +183,8 @@ trait UWT extends HasHistory {
     }
 
 
-    def moistureSensor(name: String, pin: InputPin, switch: Switch) = {
-      val s = MoistureSensor(name, pin, switch)
+    def moistureSensor(name: String, pin: InputPin, switch: Switch, activated: Boolean) = {
+      val s = MoistureSensor(name, pin, switch, activated)
       addElm(s)
       s
     }
@@ -233,8 +252,7 @@ trait UWT extends HasHistory {
     val normalized = math.min(math.max(flowPlan.minFlow * valueFactor, v), flowPlan.maxFlow * valueFactor)
     println(s"to water $v=$normalized ((${flowPlan.maxFlow} * $valueFactor -($rainLiters * $valueFactor))*${tFactor.abs})")
     if (mSensor.hasWater) {
-      println("had water!")
-      normalized * 0.1
+      0
     } else {
       normalized
     }

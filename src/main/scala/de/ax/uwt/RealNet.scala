@@ -9,24 +9,32 @@ object RealNet {
   def net(parent: UWT) = {
     import parent._
     val net = Net()
-    import net.{flow, pump, valve, moistureSensor, switch,flowMeter}
+    import net.{flow, pump, valve, moistureSensor => mkMoistureSensor, switch, flowMeter}
 
     val switch12V = switch("switch12V", 0)
     net.switch12v(switch12V)
-    val switchHygro = switch("switchHygro", 5)
-    val mSensor = moistureSensor("moistureSensor", 6, switchHygro)
-    val flowMeterMeter = flowMeter("FlowMeter", 27)
+    val switchMoistureSensor = switch("switchMoistureSensor", 4)
+    val moistureSensor = mkMoistureSensor("moistureSensor", 15, switchMoistureSensor, activated = false)
+    val flowMeterMeter = flowMeter("FlowMeter", 3)
     val pump1 = pump("pump", 2, flowMeterMeter)
-    val valve1 = valve("valve1", 3)
-    val valve2 = valve("valve2", 4)
-    val valve3 = valve("valve3", 14)
+    val valve1 = valve("valve1", 10)
+    val valve2 = valve("valve2", 5)
+    val valve3 = valve("valve3", 9)
+    val valve4 = valve("valve4", 8)
+    val valve5 = valve("valve5", 6)
+    val valve6 = valve("valve6", 7)
 
-    val fp_hort = FlowPlan("hortensien", 1, 5)
-    val fp_rose = FlowPlan("rosen", 0.5, 2)
+    val fpHort = FlowPlan("hortensien", 1, 5)
+    val fpRoseKlein = FlowPlan("rosen klein", 0.5, 2)
+    val fpRoseGroß = FlowPlan("rosen groß", 0.5, 2)
+    val fpGemüse = FlowPlan("Gemüse", 0.5, 2)
 
-    flow("Hortensie1", pump1, valve1, fp_hort, mSensor)
-    flow("Rose1", pump1, valve2, fp_rose, mSensor)
-    flow("Hortensie2", pump1, valve3, fp_hort, mSensor)
+    flow("Hortensie links", pump1, valve1, fpHort, moistureSensor)
+    flow("Rose klein", pump1, valve2, fpRoseKlein, moistureSensor)
+    flow("Hortensie mitte", pump1, valve3, fpHort, moistureSensor)
+    flow("Gemüse", pump1, valve4, fpGemüse, moistureSensor)
+    flow("Hortensie rechts", pump1, valve5, fpHort, moistureSensor)
+    flow("Rose Groß", pump1, valve6, fpRoseGroß, moistureSensor)
     net
   }
 }

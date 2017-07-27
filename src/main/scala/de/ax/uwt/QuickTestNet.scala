@@ -18,7 +18,7 @@ object QuickTestNet {
     val valve3 = valve("valve2", 3)
     val fp_hort = FlowPlan("hortensien", 1, 5000)
     val fp_hort2 = FlowPlan("hortensien2", 1, 7000)
-    val mSensor = moistureSensor("moistureSensor", 5, switchHygro)
+    val mSensor = moistureSensor("moistureSensor", 5, switchHygro, false)
     flow("Hortensie1", pump1, valve1, fp_hort, mSensor)
     flow("Hortensie2", pump1, valve3, fp_hort2, mSensor)
     net

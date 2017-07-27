@@ -46,7 +46,7 @@ class DryRun extends UWT {
   }
 
   override def getWeatherData: WeatherDataSet = {
-    val res = decode[WeatherDataSet](Source.fromFile("testdata/anchorage.json").mkString)
+    val res = decode[WeatherDataSet](Source.fromFile("testdata/meisenbach.json").mkString)
     val option = res.toOption
     option.get
   }
@@ -54,6 +54,7 @@ class DryRun extends UWT {
   override def doWait(waitMs: Long): Unit = {
     //    println(s"sim waiting for $waitMs ms")
     val last = curMs
+    stepHygroMeter
     while (curMs - last < waitMs) {
       Thread.sleep(math.min(waitMs, stepRangeMs / 2))
     }
@@ -75,7 +76,8 @@ class DryRun extends UWT {
   }
 
   def stepHygroMeter: Unit = {
-    //    net.flows.head.mSensor.pin.handlers.foreach(_.apply(4711))
+    // hygro detects water only when ishigh=false
+    net.flows.head.mSensor.pin.handlers.foreach(_.apply(47111, false))
   }
 
   private def stepTime = {

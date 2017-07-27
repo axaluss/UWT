@@ -19,9 +19,9 @@
                     var d = dta.data[flowName];
                     $("body")
                         .append(
-                            $("<div style='width: 800px;height: 500px;'>")
+                            $("<div style='width:  800px;'>")
                                 .append(
-                                    $("<h4>" + flowName + "</h4>")
+                                    $("<h5>" + flowName + "</h5>")
                                 ).append(
                                 $(" <canvas id='myChart" + i + "'></canvas>")
                             )
@@ -32,7 +32,7 @@
                         data: {
                             labels: d.labels,
                             datasets: [{
-                                label: 'liters',
+                                label: 'Liter',
                                 data: d.dataSets[0].data,
                                 borderWidth: 1
                             }]

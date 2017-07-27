@@ -5,6 +5,7 @@ import io.circe.generic.auto._
 import io.circe.parser._
 
 import scala.io.Source
+import scala.util.Random
 
 /**
   * Created by nyxos on 20.06.17.
@@ -46,7 +47,14 @@ class DryRun extends UWT {
   }
 
   override def getWeatherData: WeatherDataSet = {
-    val res = decode[WeatherDataSet](Source.fromFile("testdata/meisenbach.json").mkString)
+    val strings = List(
+      "testdata/meisenbach.json",
+      "testdata/anchorage.json",
+      "testdata/karlsruhe.json",
+      "testdata/memmingen.json",
+      "testdata/mindelheim.json",
+      "testdata/ulm.json")
+    val res = decode[WeatherDataSet](Source.fromFile(strings(Random.nextInt(strings.length))).mkString)
     val option = res.toOption
     option.get
   }

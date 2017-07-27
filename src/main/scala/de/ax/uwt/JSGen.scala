@@ -1,5 +1,7 @@
 package de.ax.uwt
 
+import java.util.Locale
+
 import org.joda.time.DateTime
 import org.joda.time.format.ISODateTimeFormat
 import io.circe.generic.auto._
@@ -59,22 +61,23 @@ object JSGen {
 
     val flowsToValues: Map[String, Seq[Double]] = flowNameToFlowHistoryEntries.map {
       case (flowName, entries) =>
-        val stepsToEntries = entries.groupBy(e => min+(((e.time - min) / step)*step))
+        val stepsToEntries = entries.groupBy(e => min + (((e.time - min) / step) * step))
         println(stepsToEntries.keys.toList.sorted)
         println(steps)
-        val list: Seq[Double] = steps.map(s => stepsToEntries.get(s).map(_.map(_.actualLiters).sum).getOrElse(0.0))
+        val list: Seq[Double] = steps.map(s =>
+          stepsToEntries.get(s).map(_.map(_.actualLiters).sum)
+            .getOrElse(0.0))
         (flowName, list)
     }
     val flowsToDataSets: Map[String, Json] = flowsToValues.map {
       case (flowName, values) =>
-        (flowName, Map("labels" -> steps.map(s => ISODateTimeFormat.dateTimeNoMillis().print(s)).asJson,
-          "dataSets" -> List(Map("data" -> values.asJson)).asJson).asJson)
+        (flowName, Map("labels" -> steps.map(s => DateTimeFormat.forStyle("SS").withLocale(Locale.GERMANY).print(s)).asJson,
+          "dataSets" -> List(Map("data" -> values.map(v => Math.round(v * 100.0) / 100.0).asJson)).asJson).asJson)
     }
 
     Map("data" -> flowsToDataSets.asJson).asJson.toString()
   }
 }
-
 
 object TestJS extends App {
   val weekInMs: Long = 1000L * 60L * 60L * 24L * 7L
@@ -89,9 +92,9 @@ object TestJS extends App {
     }
 
     1.to(99).foreach(i => {
-      flowHistory = ((FlowHistoryEntry(new FlowLike {
+      flowHistory = FlowHistoryEntry(new FlowLike {
         override def name: String = "myFlow"
-      }, i, 10)) +: flowHistory)
+      }, i, 10) +: flowHistory
     })
 
     println(s"history: $flowHistory")

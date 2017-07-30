@@ -127,7 +127,7 @@ class DryRun extends UWT {
     //      println(s"history: ${flowHistory.mkString("\n")}")
     //      println("\n\n\nWATERED EVERYTHING \n\n\n")
     //    }
-    doSchedule(24)
+    doSchedule(4)
   }
 
 

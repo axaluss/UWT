@@ -24,10 +24,10 @@ object RealNet {
     val valve5 = valve("valve5", 6)
     val valve6 = valve("valve6", 7)
 
-    val fpHort = FlowPlan("hortensien", 1, 5)
-    val fpRoseKlein = FlowPlan("rosen klein", 0.5, 2)
-    val fpRoseGroß = FlowPlan("rosen groß", 0.5, 2)
-    val fpGemüse = FlowPlan("Gemüse", 0.5, 2)
+    val fpHort = FlowPlan("hortensien", 1, 15)
+    val fpRoseKlein = FlowPlan("rosen klein", 0.5, 7)
+    val fpRoseGroß = FlowPlan("rosen groß", 0.5, 7)
+    val fpGemüse = FlowPlan("Gemüse", 0.5, 7)
 
     flow("Hortensie links", pump1, valve1, fpHort, moistureSensor)
     flow("Rose klein", pump1, valve2, fpRoseKlein, moistureSensor)

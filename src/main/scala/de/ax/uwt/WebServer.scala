@@ -40,7 +40,7 @@ case class WebServer(piRun: Option[HasHistory]) {
       } ~ path("status") {
         get {
           piRun match {
-            case Some(pi) => complete(HttpEntity(ContentTypes.`text/html(UTF-8)`, Source.fromFile("src/main/resources/status.html").mkString))
+            case Some(pi) => complete(HttpEntity(ContentTypes.`text/html(UTF-8)`, Source.fromFile("src/main/resources/status.html", "UTF8").mkString))
             case None => complete((StatusCodes.NotFound, s"no uwt given"))
           }
         }
@@ -64,6 +64,8 @@ case class WebServer(piRun: Option[HasHistory]) {
 }
 
 object ServerTest extends App {
+
+  private val string = Source.fromFile("src/main/resources/status.html", "UTF8").mkString
   val weekInMs: Long = 1000L * 60L * 60L * 24L * 7L
   private val ticks = 100
   val step: Long = weekInMs / ticks

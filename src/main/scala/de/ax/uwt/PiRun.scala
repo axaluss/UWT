@@ -37,7 +37,7 @@ class PiRun extends UWT {
 
     digitalInput.addListener(new GpioPinListenerDigital {
       override def handleGpioPinDigitalStateChangeEvent(event: GpioPinDigitalStateChangeEvent): Unit = {
-        println(s"event state of $i is ${event.getState.getName}")
+//        println(s"event state of $i is ${event.getState.getName}")
         val millis = curMs
         handlers.foreach(h => h(millis,event.getState.isHigh))
       }
@@ -77,9 +77,11 @@ class PiRun extends UWT {
   override def curMs: Long = System.currentTimeMillis()
 
   def run: Unit = {
-    doSchedule(0.002777778)
+    doSchedule(3)
 //    while(true){
 //      doWater
+//      println("waiting until next watering 5s....")
+//      doWait(5000)
 //    }
   }
 

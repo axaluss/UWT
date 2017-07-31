@@ -8,6 +8,7 @@ import io.circe.generic.auto._
 import io.circe.parser._
 
 import scala.io.Source
+import scala.util.Try
 
 /**
   * Created by nyxos on 20.06.17.
@@ -63,10 +64,8 @@ class PiRun extends UWT {
   }
 
 
-  override def getWeatherData: WeatherDataSet = {
-    val res = decode[WeatherDataSet](Source.fromFile("testdata/meisenbach.json").mkString)
-    val option = res.toOption
-    option.get
+  override def getWeatherData: Try[WeatherDataSet] = {
+    WeatherDataSet.getWeatherData
   }
 
   override def doWait(waitMs: Long): Unit = Thread.sleep(waitMs)

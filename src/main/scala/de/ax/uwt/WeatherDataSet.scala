@@ -1,10 +1,15 @@
 package de.ax.uwt
 
+import java.io.File
+import java.security.Security
+
 import io.circe.generic.auto._
 import io.circe.parser._
 
 import scala.io.Source
 import com.github.nscala_time.time.Imports._
+
+import scala.util.Try
 
 /**
   * Created by nyxos on 20.06.17.
@@ -19,13 +24,26 @@ case class WeatherDataSet(currently: WeatherData, hourly: Entry, daily: Entry) {
 
 }
 
-object TT extends App {
+object WeatherDataSet extends App {
 
-  def res = decode[WeatherDataSet](Source.fromFile("anchorage.json").mkString)
-  res.map { ds =>
-    ds.hourly.data.sortBy(_.dateTime).filter(_.precipIntensity > 0).foreach(dt => println(dt.dateTime, dt.time, dt.precipIntensity, dt.precipIntensity,dt.precipProbability))
+  Security.setProperty("jdk.tls.disabledAlgorithms", "")
+
+  def getWeatherData: Try[WeatherDataSet] = Try {
+    import sys.process._
+    new File("tmpfile.json").delete()
+    println(s"wget --timeout=60 -O tmpfile.json https://api.darksky.net/forecast/d9db5456106658292cbd4a6dc3b6e18a/50.8958998,7.30826,${(System.currentTimeMillis() / 1000).toLong}?lang=de&units=ca" !)
+    Source.fromFile("tmpfile.json", "UTF8").mkString
+  }.flatMap { s =>
+    Try {
+      decode[WeatherDataSet](s).toOption.get
+    }
+  }
+
+  getWeatherData.map { ds =>
+    ds.hourly.data.filter(_.precipIntensity > 0).sortBy(_.dateTime).foreach(dt => println(dt.dateTime, dt.time, dt.precipIntensity, dt.precipIntensity, dt.precipProbability))
     println()
     println(ds.hourly.data.size)
   }
-  println(res)
+  println(getWeatherData.failed.map(t => t.printStackTrace()))
+  println(getWeatherData)
 }

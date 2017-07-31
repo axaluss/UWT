@@ -105,3 +105,5 @@ object JSGen {
 
     println(JSGen.genJson(history))
   }
+
+}

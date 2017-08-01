@@ -6,10 +6,24 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.6.0/Chart.bundle.min.js"></script>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/css/bootstrap.min.css">
+
 </head>
 <body>
+<div id="container" class="container">
+    <div id="charts" class="row">
+        
+    </div>
+    <ul class="nav nav-tabs">
+        <li role="presentation" class="active"><a href="#">Home</a></li>
+        <li role="presentation"><a href="#">Profile</a></li>
+        <li role="presentation"><a href="#">Messages</a></li>
+    </ul>
+</div>
 <script>
-    $('body').ready(function () {
+$(document).ready(function () {
+    $('#container').ready(function () {
         jQuery.getJSON("/statusjson", function (dta) {
             console.log(dta);
             var i = 0;
@@ -19,14 +33,14 @@
                     var d = dta.data[flowName];
                     $("body")
                         .append(
-                            $("<div style='width:  800px;'>")
+                            $("<div class='col-md-10'>")
                                 .append(
                                     $("<h5>" + flowName + "</h5>")
                                 ).append(
                                 $(" <canvas id='myChart" + i + "'></canvas>")
                             )
                         );
-        var ctx = document.getElementById("myChart" + i).getContext('2d');
+                    var ctx = document.getElementById("myChart" + i).getContext('2d');
                     var myChart = new Chart(ctx, {
                         type: 'line',
                         data: {
@@ -54,6 +68,7 @@
         })
 
     });
-</script>
+
+});</script>
 </body>
 </html>

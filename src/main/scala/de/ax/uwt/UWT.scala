@@ -2,6 +2,7 @@ package de.ax.uwt
 
 import com.github.nscala_time.time.Imports
 import com.github.nscala_time.time.Imports.DateTime
+import com.typesafe.scalalogging.LazyLogging
 
 import scala.annotation.tailrec
 import scala.util.Try
@@ -31,7 +32,7 @@ trait HasHistory {
   }
 }
 
-trait UWT extends HasHistory {
+trait UWT extends HasHistory  with LazyLogging{
   implicit def i2p(i: Int): OutputPin
 
   implicit def i2p2(i: Int): InputPin
@@ -79,7 +80,7 @@ trait UWT extends HasHistory {
     val handleLog: (Long, Boolean) => Unit = {
       case (l, b) => {
         if (!wasActive) {
-          println(s"Input Pin $identifier got Event once: ($l,$b)")
+          logger.info(s"Input Pin $identifier got Event once: ($l,$b)")
           wasActive = true
         }
       }
@@ -135,7 +136,7 @@ trait UWT extends HasHistory {
     def hasWater: Boolean = {
       if (activated) {
         var hasWater = true
-        println("checking for water")
+        logger.info("checking for water")
         pin.addHandler((t, isHigh) => {
           hasWater = !isHigh
         })
@@ -143,7 +144,7 @@ trait UWT extends HasHistory {
         doWait(500)
         switch.off
         pin.clearHandlers
-        println(s"hasWater? $hasWater")
+        logger.info(s"hasWater? $hasWater")
         hasWater
       } else {
         false
@@ -245,7 +246,7 @@ trait UWT extends HasHistory {
       dt.dateTime.isAfter(DateTime.now.minusHours(radius)) || dt.dateTime.isBefore(DateTime.now.plusHours(radius))
     })
     if (datas.isFailure) {
-      println("error calculating weather")
+      logger.info("error calculating weather")
       datas.failed.foreach(_.printStackTrace())
     }
     val rainLiters: Double = datas.map {
@@ -256,11 +257,11 @@ trait UWT extends HasHistory {
     }
     val minTemp = 15
     val maxTemp = 30
-    println(s"temp: $temp")
-    val tFactor: Double = math.min(1, math.max(0, temp.map(t => (t - minTemp) / (maxTemp - minTemp)).getOrElse(1)))
+    logger.info(s"temp: $temp")
+    val tFactor: Double = math.min(1.0, math.max(0.0, temp.map(t => (t - minTemp) / (maxTemp - minTemp)).getOrElse(1.0)))
     val v = ((flowPlan.maxFlow * valueFactor) - (rainLiters * valueFactor)) * tFactor.abs
     val normalized = math.min(math.max(flowPlan.minFlow * valueFactor, v), flowPlan.maxFlow * valueFactor)
-    println(s"to water v$v=normalized(min/max)$normalized ((flowPlan.maxFlow${flowPlan.maxFlow} * valueFactor$valueFactor " +
+    logger.info(s"to water v$v=normalized(min/max)$normalized ((flowPlan.maxFlow${flowPlan.maxFlow} * valueFactor$valueFactor " +
       s"-(rainLiters$rainLiters * valueFactor$valueFactor))*tFactor${tFactor.abs})")
     if (mSensor.hasWater) {
       0
@@ -277,19 +278,19 @@ trait UWT extends HasHistory {
     var litersFlowed = 0.0
     val started = curMs
     while (pumpLitersPerMinute.isNaN || pumpLitersPerMinute.isInfinity) {
-      println("waiting for pumpLitersPerMinute")
+      logger.info("waiting for pumpLitersPerMinute")
       doWait(100)
     }
-    println(s"waiting for $liters l with $pumpLitersPerMinute l/m")
+    logger.info(s"waiting for $liters l with $pumpLitersPerMinute l/m")
     var lastPrint = started
     while (litersFlowed < liters && liters > 0.001) {
       var lastCheck = curMs
       doWait(100)
       litersFlowed += (pumpLitersPerMinute / 60.0 / 1000.0) * (curMs - lastCheck).toFloat
       if (curMs - lastPrint > 1000 || litersFlowed > liters) {
-        //      println(s"$curMs - $lastCheck = ${(curMs - lastCheck)}")
+        //      logger.info(s"$curMs - $lastCheck = ${(curMs - lastCheck)}")
         lastPrint = curMs
-        println(s"waited ${curMs - started} ms for $litersFlowed l / $liters l =${(100 * litersFlowed / liters).toInt}% with $pumpLitersPerMinute l/m")
+        logger.info(s"waited ${curMs - started} ms for $litersFlowed l / $liters l =${(100 * litersFlowed / liters).toInt}% with $pumpLitersPerMinute l/m")
       }
     }
   }
@@ -301,7 +302,7 @@ trait UWT extends HasHistory {
     checkAllOff(net)
     net.flows.foreach { case f@Flow(name, pump, valve, flowPlan, mSensor) =>
       val liters = calcLitersFromFlowPlan(flowPlan, mSensor)
-      println(s"watering $liters l for flow $f")
+      logger.info(s"watering $liters l for flow $f")
       try {
         val start = curMs
         net.switch12V.foreach(_.on)
@@ -331,7 +332,7 @@ trait UWT extends HasHistory {
   def doWaitUntil(start: Imports.DateTime)
 
   @tailrec final def doSchedule(loopHours: Double, start: DateTime = DateTime.now()): Unit = {
-    println(s"waiting for $start")
+    logger.info(s"waiting for $start")
     wateringWaitTimeHours = loopHours
     if (!shouldStop) {
       if (new DateTime(curMs).isAfter(start) || new DateTime(curMs) == start) {

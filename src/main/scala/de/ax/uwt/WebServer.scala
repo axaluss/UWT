@@ -6,11 +6,12 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.Directives._
 import StatusCodes._
 import akka.stream.ActorMaterializer
+import com.typesafe.scalalogging.LazyLogging
 
 import scala.io.{Source, StdIn}
 import scala.util.Random
 
-case class WebServer(piRun: Option[HasHistory]) {
+case class WebServer(piRun: Option[HasHistory]) extends LazyLogging {
   var errors: Seq[Throwable] = Seq.empty
 
 
@@ -55,7 +56,7 @@ case class WebServer(piRun: Option[HasHistory]) {
 
     val bindingFuture = Http().bindAndHandle(route, "0.0.0.0", 8080)
 
-    println(s"Server online at http://localhost:8080/\nPress RETURN to stop...")
+    logger.info(s"Server online at http://localhost:8080/\nPress RETURN to stop...")
     StdIn.readLine() // let it run until user presses return
     bindingFuture
       .flatMap(_.unbind()) // trigger unbinding from the port

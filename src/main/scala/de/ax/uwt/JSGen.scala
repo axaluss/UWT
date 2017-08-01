@@ -10,6 +10,7 @@ import io.circe.syntax._
 
 import scala.io.Source
 import com.github.nscala_time.time.Imports._
+import com.typesafe.scalalogging.LazyLogging
 import io.circe.Json
 
 import scala.collection.immutable
@@ -17,7 +18,7 @@ import scala.collection.immutable
 /**
   * Created by nyxos on 13.07.17.
   */
-object JSGen {
+object JSGen  extends LazyLogging{
 
   /*
 {
@@ -63,8 +64,8 @@ object JSGen {
       val flowsToValues: Map[String, Seq[Double]] = flowNameToFlowHistoryEntries.map {
         case (flowName, entries) =>
           val stepsToEntries = entries.groupBy(e => min + (((e.time - min) / step) * step))
-          println(stepsToEntries.keys.toList.sorted)
-          println(steps)
+          logger.info(s"sorted entries: ${stepsToEntries.keys.toList.sorted}")
+          logger.info(s"steps: $steps")
           val list: Seq[Double] = steps.map(s =>
             stepsToEntries.get(s).map(_.map(_.actualLiters).sum)
               .getOrElse(0.0))
@@ -82,7 +83,7 @@ object JSGen {
     }
   }
 
-  object TestJS extends App {
+  object TestJS extends App with LazyLogging {
     val weekInMs: Long = 1000L * 60L * 60L * 24L * 7L
     val step: Long = weekInMs / 10L
     private val history = new HasHistory {
@@ -100,10 +101,10 @@ object JSGen {
         }, i, 10) +: flowHistory
       })
 
-      println(s"history: $flowHistory")
+      logger.info(s"history: $flowHistory")
     }
 
-    println(JSGen.genJson(history))
+    logger.info(JSGen.genJson(history))
   }
 
 }

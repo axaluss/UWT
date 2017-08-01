@@ -38,7 +38,7 @@ class PiRun extends UWT {
 
     digitalInput.addListener(new GpioPinListenerDigital {
       override def handleGpioPinDigitalStateChangeEvent(event: GpioPinDigitalStateChangeEvent): Unit = {
-//        println(s"event state of $i is ${event.getState.getName}")
+//        logger.info(s"event state of $i is ${event.getState.getName}")
         val millis = curMs
         handlers.foreach(h => h(millis,event.getState.isHigh))
       }
@@ -79,7 +79,7 @@ class PiRun extends UWT {
     doSchedule(3)
 //    while(true){
 //      doWater
-//      println("waiting until next watering 5s....")
+//      logger.info("waiting until next watering 5s....")
 //      doWait(5000)
 //    }
   }

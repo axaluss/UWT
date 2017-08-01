@@ -1,6 +1,7 @@
 package de.ax.uwt
 
 import com.github.nscala_time.time.Imports
+import com.typesafe.scalalogging.LazyLogging
 import io.circe.generic.auto._
 import io.circe.parser._
 
@@ -13,12 +14,12 @@ import scala.util.{Random, Try}
 class DryRun extends UWT {
 
   case class IntOutputPin(i: Int) extends OutputPin {
-    override def off: Unit = println(s"pin $i off")
+    override def off: Unit = logger.info(s"pin $i off")
 
-    override def on: Unit = println(s"pin $i on")
+    override def on: Unit = logger.info(s"pin $i on")
 
     override def shutdown: Unit = {
-      println(s"shutting down pin $i")
+      logger.info(s"shutting down pin $i")
     }
 
     override def identifier: Any = i
@@ -27,7 +28,7 @@ class DryRun extends UWT {
   case class IntInputPin(i: Int) extends InputPin {
 
     override def shutdown: Unit = {
-      println(s"shutting down pin $i")
+      logger.info(s"shutting down pin $i")
     }
 
     override def identifier: Any = i
@@ -66,7 +67,7 @@ class DryRun extends UWT {
   }
 
   override def doWait(waitMs: Long): Unit = {
-    //    println(s"sim waiting for $waitMs ms")
+    //    logger.info(s"sim waiting for $waitMs ms")
     val last = curMs
     stepHygroMeter
     while (curMs - last < waitMs) {
@@ -124,14 +125,14 @@ class DryRun extends UWT {
     new Thread(() => {
       while (true) {
         step
-        //      println(s"sleeping for $stepRangeMs")
+        //      logger.info(s"sleeping for $stepRangeMs")
         Thread.sleep(stepRangeMs)
       }
     }).start()
     //    while (true) {
     //      doWater
-    //      println(s"history: ${flowHistory.mkString("\n")}")
-    //      println("\n\n\nWATERED EVERYTHING \n\n\n")
+    //      logger.info(s"history: ${flowHistory.mkString("\n")}")
+    //      logger.info("\n\n\nWATERED EVERYTHING \n\n\n")
     //    }
     doSchedule(4)
   }
@@ -139,7 +140,7 @@ class DryRun extends UWT {
 
 }
 
-object Dry extends App {
-  println("Dry.run")
+object Dry extends App with LazyLogging {
+  logger.info("Dry.run")
   new DryRun().run
 }

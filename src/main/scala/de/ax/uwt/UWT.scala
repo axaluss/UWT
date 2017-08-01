@@ -32,7 +32,7 @@ trait HasHistory {
   }
 }
 
-trait UWT extends HasHistory  with LazyLogging{
+trait UWT extends HasHistory with LazyLogging {
   implicit def i2p(i: Int): OutputPin
 
   implicit def i2p2(i: Int): InputPin
@@ -246,8 +246,7 @@ trait UWT extends HasHistory  with LazyLogging{
       dt.dateTime.isAfter(DateTime.now.minusHours(radius)) || dt.dateTime.isBefore(DateTime.now.plusHours(radius))
     })
     if (datas.isFailure) {
-      logger.info("error calculating weather")
-      datas.failed.foreach(_.printStackTrace())
+      datas.failed.foreach(e => logger.error("error calculating weather", e))
     }
     val rainLiters: Double = datas.map {
       _.map(dt => dt.precipIntensity * dt.precipProbability).sum

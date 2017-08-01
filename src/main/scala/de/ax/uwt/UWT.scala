@@ -241,21 +241,27 @@ trait UWT extends HasHistory {
 
   def calcLitersFromFlowPlan(flowPlan: FlowPlan, mSensor: MoistureSensor): Double = {
     val datas: Try[List[WeatherData]] = getWeatherData.map(_.hourly.data.filter { dt =>
-      val radius = (wateringWaitTimeHours ).toInt
+      val radius = (wateringWaitTimeHours / 2).toInt
       dt.dateTime.isAfter(DateTime.now.minusHours(radius)) || dt.dateTime.isBefore(DateTime.now.plusHours(radius))
     })
-    if(datas.isFailure){
-      println(s"ERROR calculating weather: $datas")
+    if (datas.isFailure) {
+      println("error calculating weather")
+      datas.failed.foreach(_.printStackTrace())
     }
-    val rainLiters: Double = datas.map{_.map(dt => dt.precipIntensity * dt.precipProbability).sum }.getOrElse(0)
-    val temp = datas.map{_.map(dt => dt.temperature.orElse(dt.temperatureMax).get).max}
-    val minTemp = 10
+    val rainLiters: Double = datas.map {
+      _.map(dt => dt.precipIntensity * dt.precipProbability).sum
+    }.getOrElse(0)
+    val temp = datas.map {
+      _.map(dt => dt.temperature.orElse(dt.temperatureMax).get).max
+    }
+    val minTemp = 15
     val maxTemp = 30
     println(s"temp: $temp")
-    val tFactor: Double = temp.map(t=>(t - minTemp) / (maxTemp - minTemp)).getOrElse(1)
+    val tFactor: Double = math.min(1, math.max(0, temp.map(t => (t - minTemp) / (maxTemp - minTemp)).getOrElse(1)))
     val v = ((flowPlan.maxFlow * valueFactor) - (rainLiters * valueFactor)) * tFactor.abs
     val normalized = math.min(math.max(flowPlan.minFlow * valueFactor, v), flowPlan.maxFlow * valueFactor)
-    println(s"to water v$v=normalized(min/max)$normalized ((flowPlan.maxFlow${flowPlan.maxFlow} * valueFactor$valueFactor -(rainLiters$rainLiters * valueFactor$valueFactor))*tFactor${tFactor.abs})")
+    println(s"to water v$v=normalized(min/max)$normalized ((flowPlan.maxFlow${flowPlan.maxFlow} * valueFactor$valueFactor " +
+      s"-(rainLiters$rainLiters * valueFactor$valueFactor))*tFactor${tFactor.abs})")
     if (mSensor.hasWater) {
       0
     } else {
